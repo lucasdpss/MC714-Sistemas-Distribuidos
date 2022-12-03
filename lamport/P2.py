@@ -2,7 +2,9 @@ import time
 import threading
 import pika
 
-LOCAL_NODE_NAME = 'node1'
+LOCAL_NODE_NAME = 'P2'
+lock = threading.Lock()
+lamport_clock = 0
 
 class Broker:
   def __init__(self):
@@ -19,7 +21,12 @@ class Broker:
     self.channel.basic_publish(exchange='', routing_key=node_name, body=msg)
 
 def callback(ch, method, properties, body):
-        print(body)
+        print("Received:", body)
+        msg = int(body)
+        global lamport_clock
+        lock.acquire() # regiao critica
+        lamport_clock = max(msg, lamport_clock)
+        lock.release()
 
 
 def thread_receive():
@@ -30,9 +37,18 @@ if __name__ == "__main__":
     receiving = threading.Thread(target=thread_receive)
     receiving.start()
     broker = Broker()
-    
-    while True:
-        time.sleep(4)
-        broker.send('node2', 'Hello from node 1')
-        broker.send('node3', 'Hello from node 1')
-        print("[x] Sent msg to node 2 and 3")
+
+    time.sleep(4)
+    lock.acquire() # regiao critica
+    lamport_clock += 1 # C1 <- C1 + 1 antes de qualquer evento
+    lock.release()
+    broker.send('P3', str(lamport_clock)) # envia para 2 seu relógio lógico atual
+    print("Mensagem enviada para P3: ", lamport_clock)
+
+    time.sleep(4)
+    lock.acquire() # regiao critica
+    lamport_clock += 1 # Evento local em P2
+    lock.release()
+    print("Evento local:", lamport_clock)
+
+    print("lamport_clock final:", lamport_clock)

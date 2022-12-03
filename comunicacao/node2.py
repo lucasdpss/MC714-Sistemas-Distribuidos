@@ -6,7 +6,7 @@ LOCAL_NODE_NAME = 'node2'
 
 class Broker:
   def __init__(self):
-    self.connection = pika.BlockingConnection(pika.URLParameters('amqp://guest:guest@localhost:5672/%2F')) # Blocking
+    self.connection = pika.BlockingConnection(pika.URLParameters('amqp://rasp:hissa@52.67.48.137:5672/%2F')) # Blocking
     self.channel = self.connection.channel()
 
   def start_receiving(self):
