@@ -2,7 +2,7 @@ import time
 import threading
 import pika
 
-LOCAL_NODE_NAME = 'node1'
+LOCAL_NODE_NAME = 'node3'
 
 lider = 'node3'
 node2_resp = 'NO_RESPONSE'
@@ -30,21 +30,21 @@ class Broker:
 
 
 def callback(ch, method, properties, body):
-
-    origem, msg = body.split("_")[0], body.split("_")[1]
+    global lider
+    origem, msg = body.decode("utf-8").split("_")[0], body.decode("utf-8").split("_")[1]
     print(f"{LOCAL_NODE_NAME} received message: {msg} from {origem}")
 
     # responde "teste" com OK
     if msg == "teste":
         broker = Broker()
-        broker.send(origem, "OK")
+        broker.send(origem, f"{LOCAL_NODE_NAME}_OK")
         print(f"{LOCAL_NODE_NAME} sent {origem} message: OK")
 
     # responde "ELEICAO" com "OK" e propaga para nós superiores
     elif msg == "ELEICAO":
         broker = Broker()
 
-        broker.send(origem, "OK")
+        broker.send(origem, f"{LOCAL_NODE_NAME}_OK")
         print(f"{LOCAL_NODE_NAME} sent {origem} message: OK")
 
 
@@ -54,12 +54,17 @@ def thread_receive():
 
 
 def nova_eleicao():
+    global lider
     broker = Broker()
 
     # nó 3, por ser o maior, sempre será o lider quando ativo
     print(f"{LOCAL_NODE_NAME}: eu sou o líder eleito.")
     lider = LOCAL_NODE_NAME
+
+    print(f"{LOCAL_NODE_NAME} sent node1 message: WINNER")
     broker.send('node1', f'{LOCAL_NODE_NAME}_WINNER')
+
+    print(f"{LOCAL_NODE_NAME} sent node2 message: WINNER")
     broker.send('node2', f'{LOCAL_NODE_NAME}_WINNER')
 
 
