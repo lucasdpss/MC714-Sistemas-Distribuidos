@@ -2,7 +2,7 @@ import time
 import threading
 import pika
 
-LOCAL_NODE_NAME = 'node1'
+LOCAL_NODE_NAME = 'node2'
 
 eleicao = False
 lider = 'node3'
@@ -33,21 +33,22 @@ class Broker:
 
 
 def callback(ch, method, properties, body):
+    global lider, node3_resp
 
-    origem, msg = body.split("_")[0], body.split("_")[1]
+    origem, msg = body.decode("utf-8").split("_")[0], body.decode("utf-8").split("_")[1]
     print(f"{LOCAL_NODE_NAME} received message: {msg} from {origem}")
 
     # responde "teste" com OK
     if msg == "teste":
         broker = Broker()
-        broker.send(origem, "OK")
+        broker.send(origem, f"{LOCAL_NODE_NAME}_OK")
         print(f"{LOCAL_NODE_NAME} sent {origem} message: OK")
 
     # responde "ELEICAO" com "OK" e propaga para nós superiores
     elif msg == "ELEICAO":
         broker = Broker()
 
-        broker.send(origem, "OK")
+        broker.send(origem, f"{LOCAL_NODE_NAME}_OK")
         print(f"{LOCAL_NODE_NAME} sent {origem} message: OK")
 
         broker.send('node3', 'node3_ELEICAO')
@@ -69,11 +70,12 @@ def thread_receive():
 
 
 def nova_eleicao():
+    global node3_resp, lider
     eleicao = True
     broker = Broker()
 
-    broker.send('node3', 'node2_ELEICAO')
-    print(f"{LOCAL_NODE_NAME} sent node3 message: ELEICAO")
+    broker.send(lider, 'node2_ELEICAO')
+    print(f"{LOCAL_NODE_NAME} sent {lider} message: ELEICAO")
     t1_start = time.perf_counter()
 
     # enquanto nó 3 não responder em até 5s
@@ -85,8 +87,9 @@ def nova_eleicao():
     if node3_resp == "NO_RESPONSE":
         print(f"{LOCAL_NODE_NAME}: eu sou o líder eleito.")
         lider = LOCAL_NODE_NAME
+
+        print(f"{LOCAL_NODE_NAME} sent node1 message: WINNER")
         broker.send('node1', f'{LOCAL_NODE_NAME}_WINNER')
-        broker.send('node3', f'{LOCAL_NODE_NAME}_WINNER')
 
     node3_resp = "NO_RESPONSE"
 
@@ -102,6 +105,7 @@ if __name__ == "__main__":
     while(True):
         time.sleep(2)
 
+        print(f"lider: {lider}")
         if lider == LOCAL_NODE_NAME:
             continue
 
@@ -116,3 +120,6 @@ if __name__ == "__main__":
 
         if lider == 'node3' and node3_resp == "NO_RESPONSE":
             nova_eleicao()
+        
+        # reinicia resposta do nó 3 ao default
+        node3_resp = "NO_RESPONSE"
