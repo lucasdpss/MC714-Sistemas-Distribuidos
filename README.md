@@ -3,6 +3,8 @@ Repositório para o projeto 2 da disciplina de Sistemas Distribuídos.
 * Gabriel Dourado Seabra - RA: 216213
 * Lucas de Paula Soares   - RA: 201867
 
+## Relatório
+Relatório explicando a solução apresentada: [link](Relatorio_Trabalho2.pdf)
 
 ## Como compilar e executar
 Dentro de cada pasta "comunicacao", "eleicao", "exclusao mutua" e "lamport" tem o código python de cada nó.
